@@ -111,19 +111,6 @@
       text-transform: uppercase;
     }
 
-    .done-msg {
-      margin-top: 2.5rem;
-      font-size: clamp(0.9rem, 2.5vw, 1rem);
-      color: #10b981;
-      letter-spacing: 0.15em;
-      opacity: 0;
-      transition: opacity 0.8s ease;
-    }
-
-    .done-msg.visible {
-      opacity: 1;
-    }
-
     /* background orbs */
     .orb {
       position: fixed;
@@ -172,13 +159,11 @@
       </div>
     </div>
 
-    <p class="done-msg" id="done">اكتمل ✦</p>
   </div>
 
   <script>
     const fill = document.getElementById('fill');
     const num  = document.getElementById('num');
-    const done = document.getElementById('done');
 
     let current = 0;
     const total = 100;
@@ -204,8 +189,6 @@
 
       if (progress < 1) {
         requestAnimationFrame(step);
-      } else {
-        done.classList.add('visible');
       }
     }
 
