@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>الليلة</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       background: #0a0a0f;
@@ -26,26 +22,18 @@
       text-align: center;
       width: 90%;
       max-width: 600px;
+      position: relative;
+      z-index: 20;
     }
 
     .title {
-      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-size: clamp(3rem, 10vw, 6.5rem);
       font-weight: 700;
       letter-spacing: 0.05em;
       color: #fff;
-      margin-bottom: 0.25em;
+      margin-bottom: 1em;
       opacity: 0;
       animation: fadeUp 0.8s ease forwards;
-    }
-
-    .subtitle {
-      font-size: clamp(0.85rem, 2.5vw, 1rem);
-      color: #555;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      margin-bottom: 3.5rem;
-      opacity: 0;
-      animation: fadeUp 0.8s ease 0.2s forwards;
     }
 
     .progress-wrapper {
@@ -67,23 +55,25 @@
       height: 100%;
       width: 0%;
       border-radius: 100px;
-      background: linear-gradient(90deg, #065f46, #10b981, #6ee7b7);
-      box-shadow:
-        0 0 8px rgba(16, 185, 129, 0.6),
-        0 0 20px rgba(16, 185, 129, 0.3);
+      background: linear-gradient(270deg, #065f46, #10b981, #6ee7b7);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
       transition: width 0.03s linear;
       position: relative;
     }
 
+    /* shine on the left edge (leading edge in RTL) */
     .progress-fill::after {
       content: '';
       position: absolute;
-      top: 0;
-      right: 0;
-      width: 40px;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+      top: 0; left: 0;
+      width: 40px; height: 100%;
+      background: linear-gradient(270deg, transparent, rgba(255,255,255,0.4));
       border-radius: 100px;
+    }
+
+    @keyframes orb-breathe {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.15); opacity: 0.7; }
     }
 
     .progress-label {
@@ -91,6 +81,14 @@
       justify-content: space-between;
       align-items: center;
       margin-top: 1.2rem;
+    }
+
+    /* num on the left in RTL = last in DOM order */
+    .progress-pct {
+      font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+      color: #fff;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
     }
 
     .progress-num {
@@ -104,37 +102,12 @@
       line-height: 1;
     }
 
-    .progress-pct {
-      font-size: clamp(0.75rem, 2vw, 0.9rem);
-      color: #444;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-    }
-
-    /* background orbs */
     .orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: -1;
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; z-index: -1;
     }
-
-    .orb-1 {
-      width: 400px;
-      height: 400px;
-      background: rgba(16, 185, 129, 0.08);
-      top: -100px;
-      left: -100px;
-    }
-
-    .orb-2 {
-      width: 300px;
-      height: 300px;
-      background: rgba(167, 139, 250, 0.08);
-      bottom: -80px;
-      right: -80px;
-    }
+    .orb-1 { width:400px; height:400px; background:rgba(16,185,129,0.08); top:-100px; left:-100px; }
+    .orb-2 { width:300px; height:300px; background:rgba(167,139,250,0.08); bottom:-80px; right:-80px; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -148,52 +121,350 @@
 
   <div class="container">
     <h1 class="title">الليلة</h1>
-
-<div class="progress-wrapper">
+    <div class="progress-wrapper">
       <div class="progress-track">
         <div class="progress-fill" id="fill"></div>
       </div>
       <div class="progress-label">
-        <span class="progress-num" id="num">0</span>
         <span class="progress-pct">مؤشر الليلة</span>
+        <span class="progress-num" id="num">0</span>
       </div>
     </div>
-
   </div>
 
+  <canvas id="fire-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
+
   <script>
-    const fill = document.getElementById('fill');
-    const num  = document.getElementById('num');
+    const fill   = document.getElementById('fill');
+    const num    = document.getElementById('num');
+    const track  = document.querySelector('.progress-track');
+    const orb1   = document.querySelector('.orb-1');
+    const orb2   = document.querySelector('.orb-2');
+    const title  = document.querySelector('.title');
+    const canvas = document.getElementById('fire-canvas');
+    const ctx    = canvas.getContext('2d');
 
-    let current = 0;
-    const total = 100;
-    const duration = 2800; // ms
-    let startTime = null;
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-    function easeInOut(t) {
-      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    // ── Fire particles ────────────────────────────────────────────────────────
+
+    const particles = [];
+
+    class Particle {
+      constructor(x, y, intensity) {
+        this.x     = x;
+        this.y     = y;
+        this.vx    = (Math.random() - 0.5) * (1.5 + intensity * 2);
+        this.vy    = -(Math.random() * (2 + intensity * 3) + 1);
+        this.life  = 1;
+        this.decay = Math.random() * 0.018 + 0.012 - intensity * 0.004;
+        this.size  = Math.random() * (4 + intensity * 8) + 2;
+      }
+      update() {
+        this.x    += this.vx + Math.sin(this.y * 0.05) * 0.4;
+        this.y    += this.vy;
+        this.vy   *= 0.975;
+        this.life -= this.decay;
+        this.size *= 0.975;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        const l = this.life;
+        const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+        g.addColorStop(0,   `rgba(255,255,${Math.round(l*180)},${l*0.9})`);
+        g.addColorStop(0.4, `rgba(255,${Math.round(l*160)},0,${l*0.7})`);
+        g.addColorStop(1,   'rgba(180,20,0,0)');
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+      }
     }
 
-    function step(ts) {
-      if (!startTime) startTime = ts;
-      const elapsed = ts - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = easeInOut(progress);
-      const value = Math.round(eased * total);
+    let currentValue = 0;
+    let emitting     = false;
 
-      if (value !== current) {
-        current = value;
-        fill.style.width = current + '%';
-        num.textContent = current;
-      }
+    function spawnParticles(rect, pct, intensity) {
+      // RTL: fill grows right→left; leading tip is at rect.right - fillWidth
+      const tipX  = rect.right - rect.width * (pct / 100);
+      const topY  = rect.top + rect.height / 2;
+      const count = Math.floor(3 + intensity * 10);
+      for (let i = 0; i < count; i++)
+        particles.push(new Particle(tipX + (Math.random() - 0.5) * 16, topY, intensity));
+    }
 
-      if (progress < 1) {
-        requestAnimationFrame(step);
+    function explode(rect) {
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top;
+      for (let i = 0; i < 300; i++) {
+        const p   = new Particle(cx + (Math.random() - 0.5) * rect.width, cy, 1);
+        p.vy     *= 2.5; p.vx *= 2; p.size *= 1.8; p.decay *= 0.6;
+        particles.push(p);
       }
     }
 
-    // start after the fade-in animations settle
-    setTimeout(() => requestAnimationFrame(step), 600);
+    function fireLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const trackRect = track.getBoundingClientRect();
+      const intensity = Math.pow(currentValue / 99, 1.5);
+      if (emitting && currentValue > 0) spawnParticles(trackRect, currentValue, intensity);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update(); particles[i].draw();
+        if (particles[i].life <= 0 || particles[i].size < 0.3) particles.splice(i, 1);
+      }
+      requestAnimationFrame(fireLoop);
+    }
+    requestAnimationFrame(fireLoop);
+
+    // ── Progress curve ────────────────────────────────────────────────────────
+
+    const curve = [
+      [0, 0], [0.12, 20], [0.25, 40], [0.40, 60], [0.55, 75],
+      [0.68, 85], [0.80, 91], [0.88, 95], [0.93, 97], [0.97, 98], [1.00, 99],
+    ];
+
+    const PHASE1_DURATION = 7000;
+    const STALL_DURATION  = 2200;
+    const PHASE2_DURATION = 400;
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function valueAtT(t) {
+      for (let i = 1; i < curve.length; i++) {
+        if (t <= curve[i][0]) {
+          const [t0, v0] = curve[i - 1], [t1, v1] = curve[i];
+          return lerp(v0, v1, (t - t0) / (t1 - t0));
+        }
+      }
+      return 99;
+    }
+
+    function applyValue(v) {
+      currentValue = v;
+      fill.style.width = v + '%';
+      num.textContent  = Math.round(v);
+
+      const intensity = Math.pow(v / 99, 1.5);
+      const r = Math.round(lerp(16,  255, intensity));
+      const g = Math.round(lerp(185, 120, intensity));
+      const b = Math.round(lerp(129,  30, intensity));
+      const color    = `rgb(${r},${g},${b})`;
+      const colorDim = `rgba(${r},${g},${b},0.3)`;
+
+      fill.style.background = `linear-gradient(270deg, rgba(6,95,70,1), ${color})`;
+      fill.style.boxShadow  = `0 0 ${8 + intensity*24}px rgba(${r},${g},${b},${0.5 + intensity*0.4}), 0 0 ${20 + intensity*40}px ${colorDim}`;
+      track.style.boxShadow = `0 0 0 1px ${colorDim}`;
+      num.style.background  = `linear-gradient(135deg, ${color}, #fff)`;
+      num.style.webkitBackgroundClip = 'text';
+      num.style.backgroundClip       = 'text';
+
+      const speed = lerp(3, 0.6, intensity);
+      orb1.style.animation  = `orb-breathe ${speed}s ease-in-out infinite`;
+      orb2.style.animation  = `orb-breathe ${speed * 0.85}s ease-in-out infinite`;
+      orb1.style.background = `rgba(${r},${g},${b},${0.06 + intensity*0.12})`;
+      orb2.style.background = `rgba(${r},${g},${b},${0.06 + intensity*0.1})`;
+
+      updateAudio(intensity);
+    }
+
+    let phase1Start = null;
+    function phase1(ts) {
+      if (!phase1Start) phase1Start = ts;
+      const t = Math.min((ts - phase1Start) / PHASE1_DURATION, 1);
+      applyValue(valueAtT(t));
+      if (t < 1) { requestAnimationFrame(phase1); }
+      else        { setTimeout(phase2, STALL_DURATION); }
+    }
+
+    let phase2Start = null;
+    function phase2(ts) {
+      if (ts === undefined) { requestAnimationFrame(phase2); return; }
+      if (!phase2Start) { phase2Start = ts; explode(track.getBoundingClientRect()); }
+      const t = Math.min((ts - phase2Start) / PHASE2_DURATION, 1);
+      applyValue(99 + t);
+      if (t < 1) {
+        requestAnimationFrame(phase2);
+      } else {
+        fill.style.transition  = 'box-shadow 0.4s ease';
+        fill.style.boxShadow   = '0 0 60px rgba(255,255,255,0.8), 0 0 120px rgba(255,200,100,0.5)';
+        title.style.transition = 'text-shadow 0.4s ease';
+        title.style.textShadow = '0 0 40px rgba(255,220,120,0.7)';
+        playClimaxSound();
+      }
+    }
+
+    // ── Audio engine ──────────────────────────────────────────────────────────
+    // Cinematic A-minor build: bass rumble + string pad + staccato pulses
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let ac, master, bassGain, padGain, padFilter;
+    let pulseTimeout = null;
+    let audioReady   = false;
+    let audioIntensity = 0;
+
+    function buildReverb(dest) {
+      // Parallel comb filters simulating a small room
+      const out = ac.createGain();
+      out.gain.value = 0.28;
+      out.connect(dest);
+      [0.019, 0.041, 0.067, 0.097, 0.131].forEach((t, i) => {
+        const d = ac.createDelay(0.5);
+        const g = ac.createGain();
+        d.delayTime.value = t;
+        g.gain.value = 0.6 * Math.exp(-i * 0.45);
+        d.connect(g); g.connect(out);
+      });
+      const input = ac.createGain();
+      input.gain.value = 1;
+      [0.019, 0.041, 0.067, 0.097, 0.131].forEach(t => {
+        const d = ac.createDelay(0.5);
+        d.delayTime.value = t;
+        input.connect(d);
+      });
+      return input; // connect sources here to add reverb
+    }
+
+    function startOsc(freq, type, gainVal, dest) {
+      const osc = ac.createOscillator();
+      const g   = ac.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      g.gain.value = gainVal;
+      osc.connect(g); g.connect(dest);
+      osc.start();
+      return osc;
+    }
+
+    function addVibrato(osc, rate, depth) {
+      const lfo = ac.createOscillator();
+      const lg  = ac.createGain();
+      lfo.type = 'sine';
+      lfo.frequency.value = rate;
+      lg.gain.value = depth;
+      lfo.connect(lg); lg.connect(osc.frequency);
+      lfo.start();
+    }
+
+    function initAudio() {
+      ac     = new AC();
+      master = ac.createGain();
+      master.gain.value = 0.75;
+
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -16; comp.ratio.value = 4; comp.knee.value = 8;
+      master.connect(comp); comp.connect(ac.destination);
+
+      const reverb = buildReverb(master);
+
+      // Bass: low sine cluster on A (55 Hz) — deep rumble
+      bassGain = ac.createGain();
+      bassGain.gain.value = 0;
+      bassGain.connect(master);
+      [[55, 0.45], [55.25, 0.3], [82.4, 0.2], [27.5, 0.35]].forEach(([f, v]) => {
+        startOsc(f, 'sine', v, bassGain);
+      });
+
+      // String pad: A-minor chord (A2 C3 E3 G3) with detuned pairs + vibrato
+      padGain   = ac.createGain();
+      padFilter = ac.createBiquadFilter();
+      padFilter.type = 'lowpass';
+      padFilter.frequency.value = 700;
+      padFilter.Q.value = 1.8;
+      padGain.connect(padFilter);
+      padFilter.connect(master);
+      padGain.connect(reverb); // wet send
+
+      [[110, 110.4], [130.8, 131.2], [164.8, 165.2], [196, 196.5], [220, 220.6]]
+        .forEach(([f1, f2]) => {
+          const o1 = startOsc(f1, 'sawtooth', 0.055, padGain);
+          const o2 = startOsc(f2, 'sawtooth', 0.055, padGain);
+          addVibrato(o1, 4.2 + Math.random() * 0.6, 1.2);
+          addVibrato(o2, 4.5 + Math.random() * 0.6, 1.4);
+        });
+
+      // Also a hollow 5th layer (triangle — softer texture)
+      const o5 = startOsc(440, 'triangle', 0.03, padGain);
+      addVibrato(o5, 3.8, 0.8);
+
+      schedulePulse();
+      audioReady = true;
+    }
+
+    function stab(freq, vol, dur) {
+      const osc = ac.createOscillator();
+      const g   = ac.createGain();
+      const f   = ac.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = freq * 1.8; f.Q.value = 2.5;
+      osc.type = 'sawtooth'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, ac.currentTime);
+      g.gain.linearRampToValueAtTime(vol, ac.currentTime + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+      osc.connect(f); f.connect(g); g.connect(master);
+      osc.start(); osc.stop(ac.currentTime + dur + 0.01);
+    }
+
+    function schedulePulse() {
+      const i   = audioIntensity;
+      const bpm = 44 + i * 136;          // 44 bpm → 180 bpm
+      const ms  = (60 / bpm) * 1000;
+
+      if (i > 0.05) {
+        stab(220, 0.07 + i * 0.13, 0.07 + (1 - i) * 0.08);
+        if (i > 0.5 && Math.random() < i * 0.6)
+          setTimeout(() => stab(165, 0.05 + i * 0.08, 0.06), ms * 0.5);
+      }
+      pulseTimeout = setTimeout(schedulePulse, ms);
+    }
+
+    function updateAudio(intensity) {
+      if (!audioReady) return;
+      audioIntensity = intensity;
+      const now = ac.currentTime;
+      bassGain.gain.setTargetAtTime(intensity * 0.72, now, 0.9);
+      padGain.gain.setTargetAtTime(intensity * 0.55, now, 1.1);
+      padFilter.frequency.setTargetAtTime(700 + intensity * 1600, now, 1.4);
+    }
+
+    function playClimaxSound() {
+      if (!audioReady) return;
+      clearTimeout(pulseTimeout);
+      // Full A-minor chord: big impact then long decay
+      [[55,'sine',0.22],[110,'sine',0.18],[130.8,'triangle',0.15],
+       [164.8,'triangle',0.13],[220,'triangle',0.11],[261.6,'sine',0.09],
+       [329.6,'sine',0.07],[440,'sine',0.05]].forEach(([f, type, v], i) => {
+        const osc = ac.createOscillator();
+        const g   = ac.createGain();
+        osc.type = type; osc.frequency.value = f;
+        g.gain.setValueAtTime(v, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 5);
+        osc.connect(g); g.connect(master);
+        osc.start(); osc.stop(ac.currentTime + 5.1);
+      });
+      master.gain.setTargetAtTime(0, ac.currentTime + 2.5, 1.5);
+    }
+
+    // Try autoplay; resume silently on first interaction if browser blocked it
+    function startAudio() {
+      try {
+        initAudio();
+        if (ac.state === 'suspended') ac.resume();
+      } catch(e) {}
+    }
+    startAudio();
+    ['click','touchstart','keydown'].forEach(ev =>
+      document.addEventListener(ev, () => { if (ac && ac.state === 'suspended') ac.resume(); }, { once: true })
+    );
+
+    // ── Autostart ─────────────────────────────────────────────────────────────
+
+    setTimeout(() => {
+      emitting = true;
+      requestAnimationFrame(phase1);
+    }, 600);
   </script>
 </body>
 </html>
