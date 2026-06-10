@@ -132,7 +132,7 @@
     </div>
   </div>
 
-  <canvas id="fire-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
+  <canvas id="fire-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;will-change:transform;"></canvas>
 
   <script>
     const fill   = document.getElementById('fill');
@@ -144,12 +144,28 @@
     const canvas = document.getElementById('fire-canvas');
     const ctx    = canvas.getContext('2d');
 
+    const isMobile = window.innerWidth < 768;
+
     function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // Pre-render fire sprite once — avoids createRadialGradient per particle per frame
+    const SPRITE_SIZE = 64;
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = SPRITE_SIZE;
+    const sCtx = sprite.getContext('2d');
+    const sg = sCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    sg.addColorStop(0,   'rgba(255,255,180,1)');
+    sg.addColorStop(0.35,'rgba(255,140,0,0.85)');
+    sg.addColorStop(0.7, 'rgba(200,30,0,0.4)');
+    sg.addColorStop(1,   'rgba(120,10,0,0)');
+    sCtx.fillStyle = sg;
+    sCtx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+
     // ── Fire particles ────────────────────────────────────────────────────────
 
+    const MAX_PARTICLES = isMobile ? 70 : 160;
     const particles = [];
 
     class Particle {
@@ -171,16 +187,11 @@
       }
       draw() {
         if (this.life <= 0) return;
-        const l = this.life;
-        const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
-        g.addColorStop(0,   `rgba(255,255,${Math.round(l*180)},${l*0.9})`);
-        g.addColorStop(0.4, `rgba(255,${Math.round(l*160)},0,${l*0.7})`);
-        g.addColorStop(1,   'rgba(180,20,0,0)');
+        const d = this.size * 2;
         ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.globalAlpha = this.life * 0.85;
+        ctx.drawImage(sprite, this.x - d / 2, this.y - d / 2, d, d);
+        ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
       }
     }
@@ -189,18 +200,20 @@
     let emitting     = false;
 
     function spawnParticles(rect, pct, intensity) {
+      if (particles.length >= MAX_PARTICLES) return;
       // RTL: fill grows right→left; leading tip is at rect.right - fillWidth
       const tipX  = rect.right - rect.width * (pct / 100);
       const topY  = rect.top + rect.height / 2;
-      const count = Math.floor(3 + intensity * 10);
-      for (let i = 0; i < count; i++)
+      const count = Math.floor(isMobile ? (1 + intensity * 4) : (3 + intensity * 10));
+      for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++)
         particles.push(new Particle(tipX + (Math.random() - 0.5) * 16, topY, intensity));
     }
 
     function explode(rect) {
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top;
-      for (let i = 0; i < 300; i++) {
+      const cx    = rect.left + rect.width / 2;
+      const cy    = rect.top;
+      const count = isMobile ? 80 : 220;
+      for (let i = 0; i < count; i++) {
         const p   = new Particle(cx + (Math.random() - 0.5) * rect.width, cy, 1);
         p.vy     *= 2.5; p.vx *= 2; p.size *= 1.8; p.decay *= 0.6;
         particles.push(p);
