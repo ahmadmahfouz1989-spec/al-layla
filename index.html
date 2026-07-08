@@ -10,6 +10,8 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html { background: #0a0a0f; }
+
     body {
       background: #0a0a0f;
       color: #fff;
@@ -20,6 +22,8 @@
       min-height: 100vh;
       overflow: hidden;
     }
+
+    body.shake { animation: shake 0.5s ease; }
 
     .container {
       text-align: center;
@@ -38,6 +42,8 @@
       opacity: 0;
       animation: fadeUp 0.8s ease forwards;
     }
+
+    .title.title-boom { animation: boom 0.6s ease; opacity: 1; }
 
     .progress-wrapper {
       opacity: 0;
@@ -60,8 +66,19 @@
       border-radius: 100px;
       background: linear-gradient(270deg, #065f46, #10b981, #6ee7b7);
       box-shadow: 0 0 8px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
-      transition: width 0.03s linear;
+      transition: width 0.03s linear, filter 0.1s ease-out;
       position: relative;
+    }
+
+    /* traveling shimmer sweep */
+    .progress-fill::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.4) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: shimmer 2.2s linear infinite;
+      border-radius: 100px;
     }
 
     /* shine on the left edge (leading edge in RTL) */
@@ -72,6 +89,11 @@
       width: 40px; height: 100%;
       background: linear-gradient(270deg, transparent, rgba(255,255,255,0.4));
       border-radius: 100px;
+    }
+
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
     }
 
     @keyframes orb-breathe {
@@ -103,7 +125,15 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
       line-height: 1;
+      display: inline-block;
     }
+
+    .progress-num.num-bump { animation: num-bump 0.18s ease; }
+
+    /* ambient background layers */
+    .orb-drift { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+    .orb-drift-1 { animation: drift1 46s ease-in-out infinite; }
+    .orb-drift-2 { animation: drift2 38s ease-in-out infinite; }
 
     .orb {
       position: fixed; border-radius: 50%;
@@ -112,15 +142,94 @@
     .orb-1 { width:400px; height:400px; background:rgba(16,185,129,0.08); top:-100px; left:-100px; }
     .orb-2 { width:300px; height:300px; background:rgba(167,139,250,0.08); bottom:-80px; right:-80px; }
 
+    .smoke {
+      position: fixed; border-radius: 50%;
+      filter: blur(60px); pointer-events: none; z-index: -2; opacity: 0.06;
+      background: radial-gradient(circle, rgba(140,140,160,0.6), transparent 70%);
+    }
+    .smoke-1 { width: 520px; height: 520px; top: 15%; left: 55%; animation: smoke-drift-1 55s ease-in-out infinite; }
+    .smoke-2 { width: 420px; height: 420px; top: 60%; left: 5%;  animation: smoke-drift-2 65s ease-in-out infinite; }
+
+    .rays {
+      position: fixed; top: 50%; left: 50%; width: 160vmax; height: 160vmax;
+      transform: translate(-50%, -50%);
+      background: conic-gradient(from 0deg,
+        transparent 0deg, rgba(255,220,120,0.16) 10deg, transparent 20deg,
+        transparent 50deg, rgba(255,220,120,0.14) 60deg, transparent 70deg,
+        transparent 100deg, rgba(255,220,120,0.16) 110deg, transparent 120deg,
+        transparent 150deg, rgba(255,220,120,0.14) 160deg, transparent 170deg,
+        transparent 200deg, rgba(255,220,120,0.16) 210deg, transparent 220deg,
+        transparent 250deg, rgba(255,220,120,0.14) 260deg, transparent 270deg,
+        transparent 300deg, rgba(255,220,120,0.16) 310deg, transparent 320deg,
+        transparent 350deg, rgba(255,220,120,0.14) 360deg);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+      transition: opacity 1s ease;
+    }
+    .rays.active { opacity: 1; animation: rays-spin 10s linear infinite; }
+
+    #flash {
+      position: fixed; inset: 0; background: #fff; opacity: 0;
+      pointer-events: none; z-index: 30;
+    }
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes drift1 {
+      0%, 100% { transform: translate(0, 0); }
+      50%      { transform: translate(70px, 45px); }
+    }
+    @keyframes drift2 {
+      0%, 100% { transform: translate(0, 0); }
+      50%      { transform: translate(-55px, -60px); }
+    }
+    @keyframes smoke-drift-1 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(-90px, 50px) scale(1.2); }
+    }
+    @keyframes smoke-drift-2 {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50%      { transform: translate(80px, -45px) scale(1.15); }
+    }
+    @keyframes rays-spin {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to   { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    @keyframes num-bump {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    @keyframes boom {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-8px, 4px); }
+      20% { transform: translate(8px, -6px); }
+      30% { transform: translate(-6px, 6px); }
+      40% { transform: translate(6px, -4px); }
+      50% { transform: translate(-4px, 4px); }
+      60% { transform: translate(4px, -2px); }
+      70% { transform: translate(-2px, 2px); }
+      80% { transform: translate(2px, -1px); }
+      90% { transform: translate(-1px, 1px); }
+    }
   </style>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
+  <canvas id="bg-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-3;"></canvas>
+  <div class="smoke smoke-1"></div>
+  <div class="smoke smoke-2"></div>
+  <div class="orb-drift orb-drift-1"><div class="orb orb-1"></div></div>
+  <div class="orb-drift orb-drift-2"><div class="orb orb-2"></div></div>
+  <div class="rays" id="rays"></div>
 
   <div class="container">
     <h1 class="title">الليلة</h1>
@@ -136,6 +245,7 @@
   </div>
 
   <canvas id="fire-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;will-change:transform;"></canvas>
+  <div id="flash"></div>
 
   <script>
     const fill   = document.getElementById('fill');
@@ -144,14 +254,49 @@
     const orb1   = document.querySelector('.orb-1');
     const orb2   = document.querySelector('.orb-2');
     const title  = document.querySelector('.title');
+    const rays   = document.getElementById('rays');
+    const flash  = document.getElementById('flash');
     const canvas = document.getElementById('fire-canvas');
     const ctx    = canvas.getContext('2d');
+    const bgCanvas = document.getElementById('bg-canvas');
+    const bgCtx     = bgCanvas.getContext('2d');
 
     const isMobile = window.innerWidth < 768;
 
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resizeCanvas();
+    function resizeCanvas() {
+      canvas.width  = window.innerWidth;  canvas.height  = window.innerHeight;
+      bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight;
+      initStars();
+    }
     window.addEventListener('resize', resizeCanvas);
+
+    // ── Starfield background ────────────────────────────────────────────────
+
+    let stars = [];
+    function initStars() {
+      const count = isMobile ? 50 : 110;
+      stars = Array.from({ length: count }, () => ({
+        x: Math.random() * bgCanvas.width,
+        y: Math.random() * bgCanvas.height,
+        r: Math.random() * 1.3 + 0.3,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.8 + 0.3,
+      }));
+    }
+    resizeCanvas();
+
+    function drawStars(t) {
+      bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      for (const s of stars) {
+        const a = 0.25 + 0.6 * Math.abs(Math.sin(t * 0.0007 * s.speed + s.phase));
+        bgCtx.globalAlpha = a;
+        bgCtx.fillStyle   = '#fff';
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+      bgCtx.globalAlpha = 1;
+    }
 
     // Pre-render fire sprite once — avoids createRadialGradient per particle per frame
     const SPRITE_SIZE = 64;
@@ -169,7 +314,10 @@
     // ── Fire particles ────────────────────────────────────────────────────────
 
     const MAX_PARTICLES = isMobile ? 70 : 160;
+    const MAX_SPARKS    = isMobile ? 20 : 50;
     const particles = [];
+    const sparks    = [];
+    const confetti  = [];
 
     class Particle {
       constructor(x, y, intensity) {
@@ -199,17 +347,116 @@
       }
     }
 
+    // Slow glowing embers that drift and flicker — richer fire texture
+    class Ember extends Particle {
+      constructor(x, y, intensity) {
+        super(x, y, intensity);
+        this.vx      = (Math.random() - 0.5) * 0.6;
+        this.vy      = -(Math.random() * 1.2 + 0.4);
+        this.size    = Math.random() * 2 + 1;
+        this.decay   = Math.random() * 0.006 + 0.004;
+        this.flicker = Math.random() * Math.PI * 2;
+      }
+      update() {
+        this.flicker += 0.2;
+        this.x       += this.vx + Math.sin(this.y * 0.03 + this.flicker) * 0.6;
+        this.y       += this.vy;
+        this.life    -= this.decay;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        const d     = this.size * 2;
+        const flick = 0.5 + 0.5 * Math.sin(this.flicker * 3);
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = this.life * flick * 0.9;
+        ctx.drawImage(sprite, this.x - d / 2, this.y - d / 2, d, d);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    // Fast bright streaks shot from the flame tip at high intensity
+    class Spark {
+      constructor(x, y, intensity) {
+        this.x = x; this.y = y;
+        this.px = x; this.py = y;
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.4;
+        const speed = 4 + Math.random() * 6 * (0.5 + intensity);
+        this.vx    = Math.cos(angle) * speed;
+        this.vy    = Math.sin(angle) * speed;
+        this.life  = 1;
+        this.decay = Math.random() * 0.03 + 0.03;
+      }
+      update() {
+        this.px = this.x; this.py = this.y;
+        this.vy += 0.12;
+        this.x  += this.vx; this.y += this.vy;
+        this.life -= this.decay;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `rgba(255,225,150,${this.life})`;
+        ctx.lineWidth   = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(this.px, this.py);
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    // Colorful confetti for the climax finale
+    class Confetti {
+      constructor(x, y) {
+        this.x = x; this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 4 + Math.random() * 11;
+        this.vx    = Math.cos(angle) * speed;
+        this.vy    = Math.sin(angle) * speed - 5;
+        this.life  = 1;
+        this.decay = Math.random() * 0.007 + 0.006;
+        this.size  = Math.random() * 5 + 3;
+        this.rot   = Math.random() * Math.PI * 2;
+        this.vr    = (Math.random() - 0.5) * 0.35;
+        this.hue   = [45, 160, 280, 340, 20][Math.floor(Math.random() * 5)];
+      }
+      update() {
+        this.vy   += 0.16;
+        this.vx   *= 0.99;
+        this.x    += this.vx; this.y += this.vy;
+        this.rot  += this.vr;
+        this.life -= this.decay;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.globalAlpha  = this.life;
+        ctx.fillStyle    = `hsl(${this.hue}, 90%, 65%)`;
+        ctx.shadowColor  = `hsl(${this.hue}, 90%, 65%)`;
+        ctx.shadowBlur   = 8;
+        ctx.fillRect(-this.size / 2, -this.size / 4, this.size, this.size / 2);
+        ctx.restore();
+      }
+    }
+
     let currentValue = 0;
     let emitting     = false;
 
     function spawnParticles(rect, pct, intensity) {
-      if (particles.length >= MAX_PARTICLES) return;
       // RTL: fill grows right→left; leading tip is at rect.right - fillWidth
       const tipX  = rect.right - rect.width * (pct / 100);
       const topY  = rect.top + rect.height / 2;
       const count = Math.floor(isMobile ? (1 + intensity * 4) : (3 + intensity * 10));
-      for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++)
-        particles.push(new Particle(tipX + (Math.random() - 0.5) * 16, topY, intensity));
+      for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+        const px = tipX + (Math.random() - 0.5) * 16;
+        particles.push(Math.random() < 0.15 ? new Ember(px, topY, intensity) : new Particle(px, topY, intensity));
+      }
+      if (intensity > 0.4 && sparks.length < MAX_SPARKS && Math.random() < intensity * 0.5) {
+        sparks.push(new Spark(tipX, topY, intensity));
+      }
     }
 
     function explode(rect) {
@@ -223,15 +470,45 @@
       }
     }
 
-    function fireLoop() {
+    function fireworksFinale(rect) {
+      const cx    = rect.left + rect.width / 2;
+      const cy    = rect.top;
+      const count = isMobile ? 90 : 220;
+      for (let i = 0; i < count; i++) {
+        confetti.push(new Confetti(cx + (Math.random() - 0.5) * rect.width * 1.5, cy));
+      }
+    }
+
+    function triggerFlash() {
+      flash.style.transition = 'none';
+      flash.style.opacity    = '0.85';
+      requestAnimationFrame(() => {
+        flash.style.transition = 'opacity 0.6s ease';
+        flash.style.opacity    = '0';
+      });
+    }
+
+    function fireLoop(ts) {
+      drawStars(ts || 0);
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const trackRect = track.getBoundingClientRect();
       const intensity = Math.pow(currentValue / 99, 1.5);
       if (emitting && currentValue > 0) spawnParticles(trackRect, currentValue, intensity);
+
       for (let i = particles.length - 1; i >= 0; i--) {
         particles[i].update(); particles[i].draw();
         if (particles[i].life <= 0 || particles[i].size < 0.3) particles.splice(i, 1);
       }
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        sparks[i].update(); sparks[i].draw();
+        if (sparks[i].life <= 0) sparks.splice(i, 1);
+      }
+      for (let i = confetti.length - 1; i >= 0; i--) {
+        confetti[i].update(); confetti[i].draw();
+        if (confetti[i].life <= 0) confetti.splice(i, 1);
+      }
+
       requestAnimationFrame(fireLoop);
     }
     requestAnimationFrame(fireLoop);
@@ -259,10 +536,18 @@
       return 99;
     }
 
+    let lastNum = -1;
     function applyValue(v) {
       currentValue = v;
       fill.style.width = v + '%';
-      num.textContent  = Math.round(v);
+      const rounded = Math.round(v);
+      num.textContent = rounded;
+      if (rounded !== lastNum) {
+        lastNum = rounded;
+        num.classList.remove('num-bump');
+        void num.offsetWidth;
+        num.classList.add('num-bump');
+      }
 
       const intensity = Math.pow(v / 99, 1.5);
       const r = Math.round(lerp(16,  255, intensity));
@@ -277,6 +562,7 @@
       num.style.background  = `linear-gradient(135deg, ${color}, #fff)`;
       num.style.webkitBackgroundClip = 'text';
       num.style.backgroundClip       = 'text';
+      num.style.textShadow  = `0 0 ${10 + intensity*30}px rgba(${r},${g},${b},${0.4 + intensity*0.4})`;
 
       const speed = lerp(3, 0.6, intensity);
       orb1.style.animation  = `orb-breathe ${speed}s ease-in-out infinite`;
@@ -293,7 +579,7 @@
       const t = Math.min((ts - phase1Start) / PHASE1_DURATION, 1);
       applyValue(valueAtT(t));
       if (t < 1) { requestAnimationFrame(phase1); }
-      else        { setTimeout(phase2, STALL_DURATION); }
+      else        { playRiser(STALL_DURATION / 1000); setTimeout(phase2, STALL_DURATION); }
     }
 
     let phase2Start = null;
@@ -309,7 +595,13 @@
         fill.style.boxShadow   = '0 0 60px rgba(255,255,255,0.8), 0 0 120px rgba(255,200,100,0.5)';
         title.style.transition = 'text-shadow 0.4s ease';
         title.style.textShadow = '0 0 40px rgba(255,220,120,0.7)';
+        title.classList.add('title-boom');
         playClimaxSound();
+        fireworksFinale(track.getBoundingClientRect());
+        triggerFlash();
+        rays.classList.add('active');
+        document.body.classList.add('shake');
+        setTimeout(() => document.body.classList.remove('shake'), 500);
       }
     }
 
@@ -317,7 +609,7 @@
     // Cinematic A-minor build: bass rumble + string pad + staccato pulses
 
     const AC = window.AudioContext || window.webkitAudioContext;
-    let ac, master, bassGain, padGain, padFilter;
+    let ac, master, bassGain, padGain, padFilter, noiseBuffer;
     let pulseTimeout = null;
     let audioReady   = false;
     let audioIntensity = 0;
@@ -365,6 +657,14 @@
       lfo.start();
     }
 
+    function createNoiseBuffer() {
+      const size   = ac.sampleRate * 2;
+      const buffer = ac.createBuffer(1, size, ac.sampleRate);
+      const data   = buffer.getChannelData(0);
+      for (let i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+      return buffer;
+    }
+
     function initAudio() {
       ac     = new AC();
       master = ac.createGain();
@@ -375,6 +675,8 @@
       master.connect(comp); comp.connect(ac.destination);
 
       const reverb = buildReverb(master);
+
+      noiseBuffer = createNoiseBuffer();
 
       // Bass: low sine cluster on A (55 Hz) — deep rumble
       bassGain = ac.createGain();
@@ -423,6 +725,11 @@
       osc.start(); osc.stop(ac.currentTime + dur + 0.01);
     }
 
+    function pulseFill() {
+      fill.style.filter = 'brightness(1.35)';
+      setTimeout(() => { fill.style.filter = ''; }, 90);
+    }
+
     function schedulePulse() {
       const i   = audioIntensity;
       const bpm = 44 + i * 136;          // 44 bpm → 180 bpm
@@ -430,6 +737,7 @@
 
       if (i > 0.05) {
         stab(220, 0.07 + i * 0.13, 0.07 + (1 - i) * 0.08);
+        pulseFill();
         if (i > 0.5 && Math.random() < i * 0.6)
           setTimeout(() => stab(165, 0.05 + i * 0.08, 0.06), ms * 0.5);
       }
@@ -443,6 +751,38 @@
       bassGain.gain.setTargetAtTime(intensity * 0.72, now, 0.9);
       padGain.gain.setTargetAtTime(intensity * 0.55, now, 1.1);
       padFilter.frequency.setTargetAtTime(700 + intensity * 1600, now, 1.4);
+    }
+
+    // Whoosh/riser: noise sweep + rising sawtooth, building anticipation into the climax
+    function playRiser(duration) {
+      if (!audioReady) return;
+      const now = ac.currentTime;
+
+      const noise = ac.createBufferSource();
+      noise.buffer = noiseBuffer;
+      noise.loop   = true;
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = 0.9;
+      bp.frequency.setValueAtTime(180, now);
+      bp.frequency.exponentialRampToValueAtTime(6500, now + duration);
+      const ng = ac.createGain();
+      ng.gain.setValueAtTime(0.0001, now);
+      ng.gain.exponentialRampToValueAtTime(0.5, now + duration * 0.92);
+      ng.gain.linearRampToValueAtTime(0.0001, now + duration + 0.05);
+      noise.connect(bp); bp.connect(ng); ng.connect(master);
+
+      const osc = ac.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + duration);
+      const og = ac.createGain();
+      og.gain.setValueAtTime(0.0001, now);
+      og.gain.exponentialRampToValueAtTime(0.32, now + duration * 0.95);
+      og.gain.linearRampToValueAtTime(0.0001, now + duration + 0.05);
+      osc.connect(og); og.connect(master);
+
+      noise.start(now); osc.start(now);
+      noise.stop(now + duration + 0.1); osc.stop(now + duration + 0.1);
     }
 
     function playClimaxSound() {
@@ -463,24 +803,25 @@
       master.gain.setTargetAtTime(0, ac.currentTime + 2.5, 1.5);
     }
 
-    // Try autoplay; resume silently on first interaction if browser blocked it
-    function startAudio() {
+    // ── Start gate ────────────────────────────────────────────────────────────
+    // Browsers refuse to play audio until a real user gesture, so the whole
+    // reveal (visuals + sound) begins together on the first tap/click/key —
+    // that guarantees sound instead of silently hoping a gesture happens mid-show.
+
+    let started = false;
+    function beginReveal() {
+      if (started) return;
+      started = true;
       try {
         initAudio();
         if (ac.state === 'suspended') ac.resume();
-      } catch(e) {}
-    }
-    startAudio();
-    ['click','touchstart','keydown'].forEach(ev =>
-      document.addEventListener(ev, () => { if (ac && ac.state === 'suspended') ac.resume(); }, { once: true })
-    );
-
-    // ── Autostart ─────────────────────────────────────────────────────────────
-
-    setTimeout(() => {
+      } catch (e) {}
       emitting = true;
       requestAnimationFrame(phase1);
-    }, 600);
+    }
+    ['click', 'touchstart', 'keydown'].forEach(ev =>
+      document.addEventListener(ev, beginReveal, { once: true })
+    );
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
