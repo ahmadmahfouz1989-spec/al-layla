@@ -803,10 +803,11 @@
       master.gain.setTargetAtTime(0, ac.currentTime + 2.5, 1.5);
     }
 
-    // ── Start gate ────────────────────────────────────────────────────────────
-    // Browsers refuse to play audio until a real user gesture, so the whole
-    // reveal (visuals + sound) begins together on the first tap/click/key —
-    // that guarantees sound instead of silently hoping a gesture happens mid-show.
+    // ── Start ─────────────────────────────────────────────────────────────────
+    // The reveal begins on its own as soon as the page loads. Browsers still
+    // block audio until a real user gesture, so we try to init/resume it right
+    // away, and again silently on the first tap/click/key if it got blocked —
+    // the visuals never wait on that.
 
     let started = false;
     function beginReveal() {
@@ -819,8 +820,15 @@
       emitting = true;
       requestAnimationFrame(phase1);
     }
+    beginReveal();
+
+    function resumeAudioIfNeeded() {
+      try {
+        if (ac && ac.state === 'suspended') ac.resume();
+      } catch (e) {}
+    }
     ['click', 'touchstart', 'keydown'].forEach(ev =>
-      document.addEventListener(ev, beginReveal, { once: true })
+      document.addEventListener(ev, resumeAudioIfNeeded)
     );
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
