@@ -34,6 +34,10 @@
     }
 
     .title {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2em;
       font-size: clamp(3rem, 10vw, 6.5rem);
       font-weight: 700;
       letter-spacing: 0.05em;
@@ -44,6 +48,47 @@
     }
 
     .title.title-boom { animation: boom 0.6s ease; opacity: 1; }
+
+    /* ── Sand timer, sitting at the end of the title ─────────────────────── */
+    .hourglass-icon {
+      width: 0.6em;
+      height: 0.86em;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(245, 199, 107, 0.45));
+    }
+
+    .hourglass-sand-top, .hourglass-sand-bottom { transform-box: fill-box; }
+    .hourglass-sand-top {
+      transform-origin: 50% 100%;
+      animation: sand-top-drain 3.2s ease-in-out infinite;
+    }
+    .hourglass-sand-bottom {
+      transform-origin: 50% 0%;
+      animation: sand-bottom-fill 3.2s ease-in-out infinite;
+    }
+    .hourglass-stream { animation: sand-stream-fade 3.2s linear infinite; }
+    .hourglass-grain  { animation: sand-grain-fall 0.55s linear infinite; }
+
+    @keyframes sand-top-drain {
+      0%   { transform: scale(1); }
+      82%  { transform: scale(0.05); }
+      100% { transform: scale(0.05); }
+    }
+    @keyframes sand-bottom-fill {
+      0%   { transform: scale(0.05); }
+      82%  { transform: scale(1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes sand-stream-fade {
+      0%, 78%   { opacity: 1; }
+      84%, 100% { opacity: 0; }
+    }
+    @keyframes sand-grain-fall {
+      0%   { transform: translateY(-4px); opacity: 0; }
+      15%  { opacity: 1; }
+      85%  { opacity: 1; }
+      100% { transform: translateY(4px); opacity: 0; }
+    }
 
     .progress-wrapper {
       opacity: 0;
@@ -174,6 +219,71 @@
       pointer-events: none; z-index: 30;
     }
 
+    /* container settles away once the climax has landed */
+    .container.settle {
+      opacity: 0;
+      transform: translateY(-24px) scale(0.94);
+      pointer-events: none;
+      transition: opacity 0.9s ease, transform 0.9s ease;
+    }
+
+    /* ── Reveal payoff ──────────────────────────────────────────────────── */
+    .reveal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 25;
+      transition: opacity 1s ease;
+    }
+    .reveal.active { opacity: 1; pointer-events: auto; }
+
+    .reveal-divider {
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #f5c76b, transparent);
+      transition: width 1.2s cubic-bezier(.22,1,.36,1);
+    }
+    .reveal.active .reveal-divider { width: min(220px, 60vw); }
+
+    .reveal-title {
+      font-size: clamp(2.4rem, 9vw, 4.8rem);
+      font-weight: 800;
+      opacity: 0;
+      transform: translateY(24px) scale(0.92);
+      background: linear-gradient(135deg, #fff, #ffd88a 50%, #fff);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      transition: opacity 1s ease 0.15s, transform 1s cubic-bezier(.22,1,.36,1) 0.15s;
+    }
+    .reveal.active .reveal-title {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      animation: title-glow-pulse 3.5s ease-in-out 1.2s infinite;
+    }
+
+    .reveal-subtitle {
+      font-size: clamp(1rem, 3vw, 1.35rem);
+      color: rgba(255,255,255,0.72);
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 1s ease 0.4s, transform 1s ease 0.4s;
+    }
+    .reveal.active .reveal-subtitle { opacity: 1; transform: translateY(0); }
+
+    @keyframes title-glow-pulse {
+      0%, 100% { text-shadow: 0 0 40px rgba(255,200,110,0.35); }
+      50%      { text-shadow: 0 0 70px rgba(255,200,110,0.65); }
+    }
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -232,7 +342,26 @@
   <div class="rays" id="rays"></div>
 
   <div class="container">
-    <h1 class="title">الليلة</h1>
+    <h1 class="title">
+      <span class="title-text">الليلة</span>
+      <span class="hourglass-icon" aria-hidden="true">
+        <svg viewBox="0 0 44 64" width="100%" height="100%">
+          <defs>
+            <linearGradient id="sandGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffe9b0"/>
+              <stop offset="100%" stop-color="#f0a93a"/>
+            </linearGradient>
+          </defs>
+          <rect x="3" y="1" width="38" height="5" rx="2.5" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>
+          <rect x="3" y="58" width="38" height="5" rx="2.5" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="2"/>
+          <path d="M6,6 L38,6 L22,32 L38,58 L6,58 L22,32 Z" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.6" stroke-linejoin="round"/>
+          <polygon class="hourglass-sand-top" points="9,9 35,9 22,30" fill="url(#sandGrad)"/>
+          <polygon class="hourglass-sand-bottom" points="22,34 35,55 9,55" fill="url(#sandGrad)"/>
+          <rect class="hourglass-stream" x="21" y="29" width="2" height="6" fill="#f5c76b"/>
+          <circle class="hourglass-grain" cx="22" cy="32" r="1.3" fill="#ffe9b0"/>
+        </svg>
+      </span>
+    </h1>
     <div class="progress-wrapper">
       <div class="progress-track">
         <div class="progress-fill" id="fill"></div>
@@ -247,6 +376,14 @@
   <canvas id="fire-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;will-change:transform;"></canvas>
   <div id="flash"></div>
 
+  <!-- Reveal payoff, shown once the climax settles. Edit REVEAL_TITLE / REVEAL_SUBTITLE below. -->
+  <div class="reveal" id="reveal">
+    <div class="reveal-divider"></div>
+    <h2 class="reveal-title" id="revealTitle"></h2>
+    <p class="reveal-subtitle" id="revealSubtitle"></p>
+    <div class="reveal-divider"></div>
+  </div>
+
   <script>
     const fill   = document.getElementById('fill');
     const num    = document.getElementById('num');
@@ -260,6 +397,14 @@
     const ctx    = canvas.getContext('2d');
     const bgCanvas = document.getElementById('bg-canvas');
     const bgCtx     = bgCanvas.getContext('2d');
+    const reveal    = document.getElementById('reveal');
+    const container = document.querySelector('.container');
+
+    // ── Edit these for the actual reveal ────────────────────────────────────
+    const REVEAL_TITLE    = 'الليلة موعدنا';
+    const REVEAL_SUBTITLE = 'العين على مضيق هرمز';
+    document.getElementById('revealTitle').textContent    = REVEAL_TITLE;
+    document.getElementById('revealSubtitle').textContent = REVEAL_SUBTITLE;
 
     const isMobile = window.innerWidth < 768;
 
@@ -285,6 +430,37 @@
     }
     resizeCanvas();
 
+    // Streaking shooting stars, sparse and slow, to sell the "night sky" mood
+    class ShootingStar {
+      constructor() {
+        this.x     = bgCanvas.width * 0.15 + Math.random() * bgCanvas.width * 0.6;
+        this.y     = -20;
+        this.len   = 70 + Math.random() * 70;
+        this.speed = 6 + Math.random() * 4;
+        this.angle = Math.PI / 3.2 + (Math.random() - 0.5) * 0.3;
+        this.life  = 1;
+      }
+      update() {
+        this.x    += Math.cos(this.angle) * this.speed;
+        this.y    += Math.sin(this.angle) * this.speed;
+        this.life -= 0.018;
+      }
+      draw() {
+        const dx = Math.cos(this.angle) * this.len, dy = Math.sin(this.angle) * this.len;
+        const grad = bgCtx.createLinearGradient(this.x, this.y, this.x - dx, this.y - dy);
+        grad.addColorStop(0, `rgba(255,255,255,${Math.max(this.life, 0)})`);
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        bgCtx.strokeStyle = grad;
+        bgCtx.lineWidth   = 2;
+        bgCtx.beginPath();
+        bgCtx.moveTo(this.x, this.y);
+        bgCtx.lineTo(this.x - dx, this.y - dy);
+        bgCtx.stroke();
+      }
+    }
+    let shootingStars      = [];
+    let nextShootingStarAt = 2500 + Math.random() * 4000;
+
     function drawStars(t) {
       bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
       for (const s of stars) {
@@ -296,6 +472,16 @@
         bgCtx.fill();
       }
       bgCtx.globalAlpha = 1;
+
+      if (t > nextShootingStarAt && shootingStars.length < 2) {
+        shootingStars.push(new ShootingStar());
+        nextShootingStarAt = t + 5000 + Math.random() * 7000;
+      }
+      for (let i = shootingStars.length - 1; i >= 0; i--) {
+        shootingStars[i].update();
+        shootingStars[i].draw();
+        if (shootingStars[i].life <= 0 || shootingStars[i].y > bgCanvas.height + 50) shootingStars.splice(i, 1);
+      }
     }
 
     // Pre-render fire sprite once — avoids createRadialGradient per particle per frame
@@ -442,6 +628,106 @@
       }
     }
 
+    // Rising rocket trail + the radial burst it detonates into — the finale's showpiece
+    class Rocket {
+      constructor(x, targetY) {
+        this.x = x; this.y = window.innerHeight + 10;
+        this.targetY = targetY;
+        this.vy = -(8 + Math.random() * 3);
+        this.trail = [];
+        this.done  = false;
+      }
+      update() {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 6) this.trail.shift();
+        this.y  += this.vy;
+        this.vy *= 0.995;
+        if (this.y <= this.targetY) this.done = true;
+      }
+      draw() {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = 'rgba(255,240,200,0.85)';
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        if (this.trail.length) {
+          ctx.moveTo(this.trail[0].x, this.trail[0].y);
+          for (const p of this.trail) ctx.lineTo(p.x, p.y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    class FireworkParticle {
+      constructor(x, y, hue) {
+        this.x = x; this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 5;
+        this.vx    = Math.cos(angle) * speed;
+        this.vy    = Math.sin(angle) * speed;
+        this.life  = 1;
+        this.decay = Math.random() * 0.012 + 0.012;
+        this.hue   = hue;
+        this.trail = [];
+      }
+      update() {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 4) this.trail.shift();
+        this.vy   += 0.045;
+        this.vx   *= 0.985; this.vy *= 0.985;
+        this.x    += this.vx; this.y += this.vy;
+        this.life -= this.decay;
+      }
+      draw() {
+        if (this.life <= 0) return;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `hsla(${this.hue}, 95%, 65%, ${this.life})`;
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        if (this.trail.length) {
+          ctx.moveTo(this.trail[0].x, this.trail[0].y);
+          for (const p of this.trail) ctx.lineTo(p.x, p.y);
+        }
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+
+    const rockets          = [];
+    const fireworkParticles = [];
+    const FW_HUES = [45, 160, 280, 340, 20, 190];
+
+    function launchFirework(x, targetY) {
+      rockets.push(new Rocket(x, targetY));
+    }
+
+    function launchFireworkShow() {
+      const w = window.innerWidth, h = window.innerHeight;
+      const waves = isMobile ? 3 : 5;
+      for (let i = 0; i < waves; i++) {
+        setTimeout(() => {
+          const x       = w * 0.15 + Math.random() * w * 0.7;
+          const targetY = h * 0.15 + Math.random() * h * 0.25;
+          launchFirework(x, targetY);
+        }, i * 260 + Math.random() * 200);
+      }
+      setTimeout(() => {
+        const w2 = Math.floor(waves * 0.8);
+        for (let i = 0; i < w2; i++) {
+          setTimeout(() => {
+            const x       = w * 0.1 + Math.random() * w * 0.8;
+            const targetY = h * 0.1 + Math.random() * h * 0.3;
+            launchFirework(x, targetY);
+          }, i * 220);
+        }
+      }, 1400);
+    }
+
+    // Gentle embers that drift up from the bottom of the screen once revealed
+    let ambientEmbers = false;
+
     let currentValue = 0;
     let emitting     = false;
 
@@ -496,6 +782,10 @@
       const intensity = Math.pow(currentValue / 99, 1.5);
       if (emitting && currentValue > 0) spawnParticles(trackRect, currentValue, intensity);
 
+      if (ambientEmbers && Math.random() < 0.12 && particles.length < MAX_PARTICLES) {
+        particles.push(new Ember(Math.random() * canvas.width, canvas.height + 10, 0.25));
+      }
+
       for (let i = particles.length - 1; i >= 0; i--) {
         particles[i].update(); particles[i].draw();
         if (particles[i].life <= 0 || particles[i].size < 0.3) particles.splice(i, 1);
@@ -507,6 +797,19 @@
       for (let i = confetti.length - 1; i >= 0; i--) {
         confetti[i].update(); confetti[i].draw();
         if (confetti[i].life <= 0) confetti.splice(i, 1);
+      }
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        rockets[i].update(); rockets[i].draw();
+        if (rockets[i].done) {
+          const hue   = FW_HUES[Math.floor(Math.random() * FW_HUES.length)];
+          const count = isMobile ? 40 : 90;
+          for (let k = 0; k < count; k++) fireworkParticles.push(new FireworkParticle(rockets[i].x, rockets[i].y, hue));
+          rockets.splice(i, 1);
+        }
+      }
+      for (let i = fireworkParticles.length - 1; i >= 0; i--) {
+        fireworkParticles[i].update(); fireworkParticles[i].draw();
+        if (fireworkParticles[i].life <= 0) fireworkParticles.splice(i, 1);
       }
 
       requestAnimationFrame(fireLoop);
@@ -598,10 +901,18 @@
         title.classList.add('title-boom');
         playClimaxSound();
         fireworksFinale(track.getBoundingClientRect());
+        launchFireworkShow();
         triggerFlash();
         rays.classList.add('active');
         document.body.classList.add('shake');
         setTimeout(() => document.body.classList.remove('shake'), 500);
+
+        setTimeout(() => {
+          emitting = false;
+          ambientEmbers = true;
+          container.classList.add('settle');
+        }, 2400);
+        setTimeout(() => reveal.classList.add('active'), 3300);
       }
     }
 
